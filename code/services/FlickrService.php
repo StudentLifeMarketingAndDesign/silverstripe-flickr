@@ -34,6 +34,92 @@ class FlickrService extends RestfulService {
 		$this->checkErrors = true;
 	}
 
+	public function getPhotoById($photo_Id, $userId = null){
+		$params = array(
+			'method' => 'flickr.photos.getSizes',
+			'photo_id' => $photo_Id
+			
+		);
+
+		$this->setQueryString(array_merge($this->defaultParams(), $params));
+
+
+			try {
+			$response = $this->request()->getBody();
+			$response = unserialize($response);
+
+			if(!$response || $response['stat'] !== 'ok') {
+				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
+			}
+
+			//print_r($response);
+			$result['PhotoUrl'] = $response['sizes']['size'][8]['source'];
+			$result['Description'] = $this->getPhotoDescription($photo_Id)['description'];
+			$result['URL'] = $this->getPhotoDescription($photo_Id)['url'];
+
+
+			//$result['PhotoUrl'] = $response['sizes']...
+			//$result['Description'] = $secondResponse
+
+			//print_r($result);
+			return $result;
+		} catch(Exception $e) {
+			SS_Log::log(
+				sprintf(
+					"Couldn't retrieve Flickr photo for  photo '%s': Message: %s",
+					$photo_Id,
+					$e->getMessage()
+				),
+				SS_Log::ERR
+			);
+
+			return null;
+		}
+	}
+
+
+	public function getPhotoDescription($photo_Id, $userId = null){
+		$params = array(
+			'method' => 'flickr.photos.getInfo',
+			'photo_id' => $photo_Id
+			
+		);
+
+		$this->setQueryString(array_merge($this->defaultParams(), $params));
+
+
+			try {
+			$response = $this->request()->getBody();
+			$response = unserialize($response);
+
+			if(!$response || $response['stat'] !== 'ok') {
+				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
+			}
+
+		
+			$result['description'] = $response['photo']['description']['_content'];
+			$result['url'] = $response['photo']['urls']['url'][0]['_content'];
+			
+
+			//$result['PhotoUrl'] = $response['sizes']...
+			//$result['Description'] = $secondResponse
+
+			//print_r($result);
+			return $result;
+		} catch(Exception $e) {
+			SS_Log::log(
+				sprintf(
+					"Couldn't retrieve Flickr photo for  photo '%s': Message: %s",
+					$photo_Id,
+					$e->getMessage()
+				),
+				SS_Log::ERR
+			);
+
+			return null;
+		}
+	}
+
 	/**
 	 * @param string $userId The Flickr user_id to get all photosets for
 	 * @todo Currently returns all photosets. Optimisations could be made to only return a single page of results
@@ -120,6 +206,7 @@ class FlickrService extends RestfulService {
 			return null;
 		}
 	}
+
 
 	/**
 	 * Returns all photos within a given photoset.
