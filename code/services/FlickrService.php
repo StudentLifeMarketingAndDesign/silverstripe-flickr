@@ -1,66 +1,52 @@
 <?php
 class FlickrService extends RestfulService {
 	/**
-	 * @var int Expiry time for API calls, measured in seconds. 3600 == 1 hour.
-	 */
+	* @var int Expiry time for API calls, measured in seconds. 3600 == 1 hour.
+	*/
 	private static $flickr_cache_expiry = 3600;
-
 	/**
-	 * @var string The API key to be used for the next request to the API. This may change between requests (with calls
-	 * to {@link self::setApiKey()}), so it's not a config variable.
-	 */
+	* @var string The API key to be used for the next request to the API. This may change between requests (with calls
+	* to {@link self::setApiKey()}), so it's not a config variable.
+	*/
 	private $apiKey;
-
 	/**
-	 * @see self::isApiAvailable()
-	 * @var bool true if the API is available, false if not
-	 */
+	* @see self::isApiAvailable()
+	* @var bool true if the API is available, false if not
+	*/
 	private $apiAvailable;
-
 	/**
-	 * @see self::isApiAvailable()
-	 * @var Integer The api response code from calling flickr.test.echo
-	 */
+	* @see self::isApiAvailable()
+	* @var Integer The api response code from calling flickr.test.echo
+	*/
 	private $responseCode;
-
 	/**
-	 * @see self::isApiAvailable()
-	 * @var String The api response message from calling flickr.test.echo
-	 */
+	* @see self::isApiAvailable()
+	* @var String The api response message from calling flickr.test.echo
+	*/
 	private $responseMessage;
-
 	public function __construct() {
 		parent::__construct('https://www.flickr.com/services/rest/', $this->config()->flickr_cache_expiry);
 		$this->checkErrors = true;
 	}
-
 	public function getPhotoById($photo_Id, $userId = null){
 		$params = array(
 			'method' => 'flickr.photos.getSizes',
 			'photo_id' => $photo_Id
 			
 		);
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
-
 			try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
 			if(!$response || $response['stat'] !== 'ok') {
 				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
 			}
-
 			//print_r($response);
 			$result['PhotoUrl'] = $response['sizes']['size'][8]['source'];
 			$result['Description'] = $this->getPhotoDescription($photo_Id)['description'];
 			$result['URL'] = $this->getPhotoDescription($photo_Id)['url'];
-
-
 			//$result['PhotoUrl'] = $response['sizes']...
 			//$result['Description'] = $secondResponse
-
 			//print_r($result);
 			return $result;
 		} catch(Exception $e) {
@@ -72,38 +58,28 @@ class FlickrService extends RestfulService {
 				),
 				SS_Log::ERR
 			);
-
 			return null;
 		}
 	}
-
-
 	public function getPhotoDescription($photo_Id, $userId = null){
 		$params = array(
 			'method' => 'flickr.photos.getInfo',
 			'photo_id' => $photo_Id
 			
 		);
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
-
 			try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
 			if(!$response || $response['stat'] !== 'ok') {
 				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
 			}
-
 		
 			$result['description'] = $response['photo']['description']['_content'];
 			$result['url'] = $response['photo']['urls']['url'][0]['_content'];
 			
-
 			//$result['PhotoUrl'] = $response['sizes']...
 			//$result['Description'] = $secondResponse
-
 			//print_r($result);
 			return $result;
 		} catch(Exception $e) {
@@ -115,44 +91,34 @@ class FlickrService extends RestfulService {
 				),
 				SS_Log::ERR
 			);
-
 			return null;
 		}
 	}
-
 	/**
-	 * @param string $userId The Flickr user_id to get all photosets for
-	 * @todo Currently returns all photosets. Optimisations could be made to only return a single page of results
-	 * @return ArrayList<FlickrPhotoset>
-	 */
+	* @param string $userId The Flickr user_id to get all photosets for
+	* @todo Currently returns all photosets. Optimisations could be made to only return a single page of results
+	* @return ArrayList<FlickrPhotoset>
+	*/
 	public function getPhotosetsForUser($userId) {
 		if(!$this->isAPIAvailable()) return null;
-
 		$params = array(
 			'method' => 'flickr.photosets.getList',
 			'user_id' => $userId,
 		);
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
 		try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
 			if(!$response || $response['stat'] !== 'ok') {
 				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
 			}
-
 			$results = new ArrayList();
-
 			foreach($response['photosets']['photoset'] as $set) {
 				$obj = FlickrPhotoset::create_from_array($set, $userId);
-
 				if($obj) {
 					$results->push($obj);
 				}
 			}
-
 			return $results;
 		} catch(Exception $e) {
 			SS_Log::log(
@@ -163,33 +129,25 @@ class FlickrService extends RestfulService {
 				),
 				SS_Log::ERR
 			);
-
 			return null;
 		}
 	}
-
 	public function getPhotosetById($photosetId, $userId = null) {
 		if(!$this->isAPIAvailable()) return null;
-
 		$params = array(
 			'method' => 'flickr.photosets.getInfo',
 			'photoset_id' => $photosetId
 		);
-
 		if(!is_null($userId)) {
 			$params['user_id'] = $userId;
 		}
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
 		try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
 			if(!$response || $response['stat'] !== 'ok') {
 				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
 			}
-
 			$result = FlickrPhotoset::create_from_array($response['photoset'], $userId);
 			return $result;
 		} catch(Exception $e) {
@@ -202,53 +160,43 @@ class FlickrService extends RestfulService {
 				),
 				SS_Log::ERR
 			);
-
 			return null;
 		}
 	}
-
-
 	/**
-	 * Returns all photos within a given photoset.
-	 *
-	 * @param int $photosetId
-	 * @param int|null $userId Optional, but API will respond faster if this is specified
-	 * @return ArrayList<FlickrPhoto>
-	 */
-	public function getPhotosInPhotoset($photosetId, $userId = null) {
+	* Returns all photos with a given tag.
+	*
+	* @param int $photosetId
+	* @param int|null $userId Optional, but API will respond faster if this is specified
+	* @return ArrayList<FlickrPhoto>
+	*/
+	public function getPhotosWithTag($tags, $userId = null) {
 		if(!$this->isAPIAvailable()) return null;
-
 		$params = array(
-			'method' => 'flickr.photosets.getPhotos',
-			'photoset_id' => $photosetId,
+			'method' => 'flickr.photos.search',
+			'tags' => $tags,
 			'extras' => 'description,original_format'
-
 		);
-
 		if($userId) {
 			$params['user_id'] = $userId;
 		}
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
+		
 		try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
+			//print_r($response);
 			if(!$response || !isset($response['stat']) || $response['stat'] !== 'ok') {
 				throw new Exception(sprintf("Response from Flickr not expected: %s", var_export($response, true)));
 			}
-
 			$results = new ArrayList();
-
-			foreach($response['photoset']['photo'] as $photo) {
+			foreach($response['photos']['photo'] as $photo) {
 				$obj = FlickrPhoto::create_from_array($photo);
-
 				if($obj) {
 					$results->push($obj);
 				}
 			}
-
+		
 			return $results;
 		} catch(Exception $e) {
 			SS_Log::log(
@@ -259,36 +207,73 @@ class FlickrService extends RestfulService {
 				),
 				SS_Log::ERR
 			);
-
 			return null;
 		}
 	}
-
 	/**
-	 * @return bool true if the API is available right now, or false if it isn't
-	 */
+	* Returns all photos within a given photoset.
+	*
+	* @param int $photosetId
+	* @param int|null $userId Optional, but API will respond faster if this is specified
+	* @return ArrayList<FlickrPhoto>
+	*/
+	public function getPhotosInPhotoset($photosetId, $userId = null) {
+		if(!$this->isAPIAvailable()) return null;
+		$params = array(
+			'method' => 'flickr.photosets.getPhotos',
+			'photoset_id' => $photosetId,
+			'extras' => 'description,original_format'
+		);
+		if($userId) {
+			$params['user_id'] = $userId;
+		}
+		$this->setQueryString(array_merge($this->defaultParams(), $params));
+		try {
+			$response = $this->request()->getBody();
+			$response = unserialize($response);
+			if(!$response || !isset($response['stat']) || $response['stat'] !== 'ok') {
+				throw new Exception(sprintf("Response from Flickr not expected: %s", var_export($response, true)));
+			}
+			$results = new ArrayList();
+			foreach($response['photoset']['photo'] as $photo) {
+				$obj = FlickrPhoto::create_from_array($photo);
+				if($obj) {
+					$results->push($obj);
+				}
+			}
+			return $results;
+		} catch(Exception $e) {
+			SS_Log::log(
+				sprintf(
+					"Couldn't retrieve Flickr photos in photoset '%s' for optional user '%s'",
+					$photosetId,
+					$userId
+				),
+				SS_Log::ERR
+			);
+			return null;
+		}
+	}
+	/**
+	* @return bool true if the API is available right now, or false if it isn't
+	*/
 	public function isAPIAvailable() {
 		// Ensure we always query this, so we don't cache stale information, but only query once per request
 		if($this->apiAvailable) return $this->apiAvailable;
 		$oldExpiry = $this->cache_expire;
 		$this->cache_expire = 0;
-
 		$params = array(
 			'method' => 'flickr.test.echo'
 		);
-
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
-
 		try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
-
 			$return = $response['stat'] === "ok";
-
 			/*
-			 * $response contains an array, e.g.
-			 * {"stat":"fail", "code":100, "message":"Invalid API Key (Key has invalid format)"}
-			 */
+			* $response contains an array, e.g.
+			* {"stat":"fail", "code":100, "message":"Invalid API Key (Key has invalid format)"}
+			*/
 			if($response['stat'] === "ok") {
 				$return = true;
 			}
@@ -296,40 +281,33 @@ class FlickrService extends RestfulService {
 				// save the error code and message for service consumers to utilise
 				$this->responseCode = $response['code'];
 				$this->responseMessage = $response['message'];
-
 				$return = false;
 			}
 		} catch(Exception $e) {
 			$return = false;
 		}
-
 		$this->cache_expire = $oldExpiry;
-
 		$this->apiAvailable = $return;
 		return $return;
 	}
-
 	public function setApiKey($key) {
 		$this->apiKey = $key;
 		return $this;
 	}
-
 	public function getApiKey() {
 		return $this->apiKey;
 	}
-
 	/**
-	 * Get the API response code
-	 * @return String
-	 */
+	* Get the API response code
+	* @return String
+	*/
 	public function getApiResponseCode() {
 		return $this->responseCode;
 	}
-
 	/**
-	 * Get the API response message
-	 * @return String
-	 */
+	* Get the API response message
+	* @return String
+	*/
 	public function getApiResponseMessage() {
 		return $this->responseMessage;
 	}
