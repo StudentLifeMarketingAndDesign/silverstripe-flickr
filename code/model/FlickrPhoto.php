@@ -7,11 +7,11 @@
 class FlickrPhoto extends FlickrData {
 	private static $casting = array(
 		'Title' => 'Varchar',
-		'Description' => 'Varchar'
+		'Description' => 'HTMLText',
 	);
 
 	public static function create_from_array($photo) {
-		if(!isset($photo['id']) || !isset($photo['farm']) || !isset($photo['server']) || !isset($photo['secret'])) {
+		if (!isset($photo['id']) || !isset($photo['farm']) || !isset($photo['server']) || !isset($photo['secret'])) {
 			return null;
 		}
 
