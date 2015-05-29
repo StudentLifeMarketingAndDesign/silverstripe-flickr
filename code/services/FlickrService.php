@@ -43,8 +43,10 @@ class FlickrService extends RestfulService {
 			}
 			//print_r($response);
 			$result['PhotoUrl'] = $response['sizes']['size'][8]['source'];
-			$result['Description'] = $this->getPhotoDescription($photo_Id)['description'];
-			$result['URL'] = $this->getPhotoDescription($photo_Id)['url'];
+			print_r("hey");
+			$temp =  $this->getPhotoDescription($photo_Id);
+			$result['Description'] = $temp['description'];
+			$result['URL'] = $temp['url'];
 			//$result['PhotoUrl'] = $response['sizes']...
 			//$result['Description'] = $secondResponse
 			//print_r($result);
