@@ -26,5 +26,10 @@ Slideshows or sliders show the photos in one, single block, moving left or right
 * `[flickr set="xxxxxxx" type="slideshow" /]` - Displays a Flickr set in a single column
 * `[flickr tag="xxxxxxx" type="slideshow" /]` - Displays a Flickr tag search in a single column
 
+## Grid (experimental)
+Grids can be two (default) or three columns and attempts to lay out variable height/width images in a way that looks nice. Still working on this
+* `[flickr set="xxxxxxx" type="grid" columns="2" /]` - Displays a Flickr set in a two column grid, every fifth image is full width.
+* `[flickr set="xxxxxxx" type="grid" columns="3" /]` - Displays a Flickr set in a three column grid, every fourth image is full width.
+
 ### Single Photos
 * `[flickr photo="xxxxxx" /]`
