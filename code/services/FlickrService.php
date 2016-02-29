@@ -29,19 +29,22 @@ class FlickrService extends RestfulService {
 		$this->checkErrors = true;
 	}
 	public function getPhotoById($photo_Id, $userId = null) {
+
 		$params = array(
 			'method' => 'flickr.photos.getSizes',
 			'photo_id' => $photo_Id,
 
 		);
 		$this->setQueryString(array_merge($this->defaultParams(), $params));
+		//print_r($this->queryString);
 		try {
 			$response = $this->request()->getBody();
 			$response = unserialize($response);
 			if (!$response || $response['stat'] !== 'ok') {
+				print_r($this->getQueryString());
 				throw new Exception(sprintf('Response from Flickr not expected: %s', var_export($response, true)));
 			}
-			//print_r($response);
+			
 			$result['PhotoUrl'] = $response['sizes']['size'][8]['source'];
 			//print_r("hey");
 			$temp = $this->getPhotoDescription($photo_Id);
